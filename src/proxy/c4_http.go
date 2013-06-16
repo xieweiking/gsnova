@@ -73,7 +73,11 @@ func (p *pushWorker) writeContent(content []byte) {
 	//		Body:          ioutil.NopCloser(buf),
 	//		ContentLength: int64(buf.Len()),
 	//	}
-	req, _ := http.NewRequest("POST", p.server.String(), buf)
+	method := "POST"
+	if c4_cfg.XGet {
+		method = "GET"
+	}
+	req, _ := http.NewRequest(method, p.server.String(), buf)
 
 	if c4_cfg.Encrypter == event.ENCRYPTER_RC4 {
 		tmp := []byte(common.RC4Key)
@@ -89,6 +93,9 @@ func (p *pushWorker) writeContent(content []byte) {
 	req.Header.Set("Content-Type", "application/octet-stream")
 	if len(c4_cfg.UA) > 0 {
 		req.Header.Set("User-Agent", c4_cfg.UA)
+	}
+	if c4_cfg.XGet {
+		req.Header.Set("X-HTTP-Method-Override", "POST")
 	}
 	resp, err := c4HttpClient.Do(req)
 	fail := false
@@ -126,7 +133,11 @@ func (p *pullWorker) loop() {
 		p.server.Path = p.server.Path + "pull"
 	}
 	for {
-		req, _ := http.NewRequest("POST", p.server.String(), nil)
+		method := "POST"
+		if c4_cfg.XGet {
+			method = "GET"
+		}
+		req, _ := http.NewRequest(method, p.server.String(), nil)
 		//		req := &http.Request{
 		//			Method:        "POST",
 		//			URL:           p.server,
@@ -143,6 +154,9 @@ func (p *pullWorker) loop() {
 		req.Header.Set("Content-Type", "application/octet-stream")
 		if len(c4_cfg.UA) > 0 {
 			req.Header.Set("User-Agent", c4_cfg.UA)
+		}
+		if c4_cfg.XGet {
+			req.Header.Set("X-HTTP-Method-Override", "POST")
 		}
 		log.Printf("Pull worker[%s]:%d start working\n", p.server.Host, p.index)
 		resp, err := c4HttpClient.Do(req)

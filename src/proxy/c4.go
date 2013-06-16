@@ -37,6 +37,7 @@ type C4Config struct {
 	MaxConn                uint32
 	WSConnKeepAlive        uint32
 	InjectRange            []*regexp.Regexp
+	XGet                   bool
 	FetchLimitSize         uint32
 	ConcurrentRangeFetcher uint32
 	Proxy                  string
@@ -447,7 +448,7 @@ func initC4Config() {
 	if enable, exist := common.Cfg.GetIntProperty("C4", "MultiRangeFetchEnable"); exist {
 		c4_cfg.MultiRangeFetchEnable = (enable != 0)
 	}
-	
+
 	c4_cfg.UseSysDNS = false
 	if enable, exist := common.Cfg.GetIntProperty("C4", "UseSysDNS"); exist {
 		c4_cfg.UseSysDNS = (enable != 0)
@@ -456,6 +457,10 @@ func initC4Config() {
 	c4_cfg.InjectRange = []*regexp.Regexp{}
 	if ranges, exist := common.Cfg.GetProperty("C4", "InjectRange"); exist {
 		c4_cfg.InjectRange = initHostMatchRegex(ranges)
+	}
+	c4_cfg.XGet = false
+	if enable, exist := common.Cfg.GetIntProperty("C4", "XGet"); exist {
+		c4_cfg.XGet = (enable != 0)
 	}
 	logined = false
 	if ifs, err := net.Interfaces(); nil == err {
@@ -487,7 +492,7 @@ func (manager *C4) Init() error {
 	tlcfg.InsecureSkipVerify = true
 
 	dial := func(n, addr string) (net.Conn, error) {
-		if len(c4_cfg.Proxy) == 0 && !c4_cfg.UseSysDNS{
+		if len(c4_cfg.Proxy) == 0 && !c4_cfg.UseSysDNS {
 			remote := getAddressMapping(addr)
 			return net.Dial(n, remote)
 		}
